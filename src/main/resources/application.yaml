@@ -1,0 +1,33 @@
+# Nom de l'application
+spring:
+  application:
+    name: swingApp
+
+
+  # Connexion DB (Doit correspondre au docker-compose.yml)
+  datasource:
+    url: jdbc:postgresql://localhost:5432/couture_erp
+    username: dev_user
+    password: dev_password
+    driver-class-name: org.postgresql.Driver
+
+  # JPA / Hibernate
+  jpa:
+    database: POSTGRESQL
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      # "update" mettra à jour le schéma automatiquement (pratique en dev)
+      ddl-auto: update
+    # Affiche les requêtes SQL dans la console (pour débugger)
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+  # Java 21 Performance (Virtual Threads)
+  threads:
+    virtual:
+      enabled: true
+  rsocket:
+    server:
+      port: 8080
