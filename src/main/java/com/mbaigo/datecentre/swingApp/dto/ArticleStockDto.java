@@ -14,5 +14,7 @@ public record ArticleStockDto(
         @PositiveOrZero Double quantite,
         @PositiveOrZero BigDecimal prixAchat,
         Double seuilAlerte,
-        String fournisseur
+        String fournisseur,
+        // Nouveau champ calculé (sera true si le stock est bas)
+        boolean isSeuilAlerte
 ) {}

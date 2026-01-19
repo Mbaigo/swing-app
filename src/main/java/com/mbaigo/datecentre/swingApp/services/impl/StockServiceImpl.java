@@ -55,23 +55,6 @@ public class StockServiceImpl implements StockService {
     }
 
     @Override
-    @Transactional // CRITIQUE : Empêche les accès concurrents corrompus
-    public void debiterStock(Long id, Double quantiteNecessaire) {
-        ArticleStock article = stockRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Article introuvable"));
-
-        if (article.getQuantiteDisponible() < quantiteNecessaire) {
-            throw new IllegalArgumentException(
-                    "Stock insuffisant pour " + article.getNom() +
-                            ". Demandé: " + quantiteNecessaire +
-                            ", Disponible: " + article.getQuantiteDisponible());
-        }
-
-        article.setQuantiteDisponible(article.getQuantiteDisponible() - quantiteNecessaire);
-        stockRepository.save(article);
-    }
-
-    @Override
     @Transactional
     public void crediterStock(Long id, Double quantiteAjoutee) {
         ArticleStock article = stockRepository.findById(id)
@@ -81,11 +64,47 @@ public class StockServiceImpl implements StockService {
         stockRepository.save(article);
     }
 
+    @Override
+    public List<ArticleStockDto> getArticlesEnAlerte() {
+        return stockRepository.findArticlesEnAlerte().stream()
+                .map(this::mapToDto)
+                .toList();
+    }
+
+    @Override
+    @Transactional
+    public void debiterStock(Long id, Double quantiteNecessaire) {
+        ArticleStock article = stockRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Article introuvable"));
+
+        if (article.getQuantiteDisponible() < quantiteNecessaire) {
+            throw new IllegalArgumentException("Stock insuffisant !");
+        }
+
+        double nouvelleQuantite = article.getQuantiteDisponible() - quantiteNecessaire;
+        article.setQuantiteDisponible(nouvelleQuantite);
+
+        // --- NOUVEAU : Contrôle du Seuil ---
+        if (article.getSeuilAlerte() != null && nouvelleQuantite <= article.getSeuilAlerte()) {
+            // Ici, dans un vrai système, on pourrait envoyer un mail ou une notif Kafka.
+            // Pour l'instant, on log l'info (visible dans la console serveur)
+            System.out.println("⚠️ ALERTE STOCK : L'article '" + article.getNom() +
+                    "' est passé sous le seuil (" + nouvelleQuantite + " / " + article.getSeuilAlerte() + ")");
+        }
+        // -----------------------------------
+
+        stockRepository.save(article);
+    }
+
+    // Mise à jour du mapper pour remplir le booléen 'enAlerte'
     private ArticleStockDto mapToDto(ArticleStock a) {
+        boolean isAlert = a.getSeuilAlerte() != null && a.getQuantiteDisponible() <= a.getSeuilAlerte();
+
         return new ArticleStockDto(
                 a.getId(), a.getNom(), a.getReference(), a.getCategorie(),
                 a.getQuantiteDisponible(), a.getPrixAchatUnitaire(),
-                a.getSeuilAlerte(), a.getFournisseur()
+                a.getSeuilAlerte(), a.getFournisseur(),
+                isAlert // Le champ booléen
         );
     }
 }

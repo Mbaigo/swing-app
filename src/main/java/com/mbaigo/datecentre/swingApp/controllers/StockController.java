@@ -44,4 +44,17 @@ public class StockController {
         stockService.crediterStock(id, qte);
         return ResponseEntity.ok().build();
     }
+
+    // ...
+
+    @Operation(summary = "Articles en alerte", description = "Récupère tous les articles dont la quantité est inférieure ou égale au seuil défini.")
+    @GetMapping("/alertes")
+    public ResponseEntity<List<ArticleStockDto>> getAlertesStock() {
+        List<ArticleStockDto> alertes = stockService.getArticlesEnAlerte();
+
+        if (alertes.isEmpty()) {
+            return ResponseEntity.noContent().build();
+        }
+        return ResponseEntity.ok(alertes);
+    }
 }

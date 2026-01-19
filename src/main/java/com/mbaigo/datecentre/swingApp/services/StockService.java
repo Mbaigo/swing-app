@@ -19,4 +19,6 @@ public interface StockService {
 
     // Pour rajouter du stock (réassort)
     void crediterStock(Long id, Double quantiteAjoutee);
+    //Recuperer les articles dont le stock est <= au seuil de securite
+    List<ArticleStockDto> getArticlesEnAlerte();
 }
