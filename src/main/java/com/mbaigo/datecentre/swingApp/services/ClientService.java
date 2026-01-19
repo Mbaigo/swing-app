@@ -24,4 +24,12 @@ public interface ClientService {
 
     //GetByPhoneNumber
     Optional<ClientDto> getByPhone(String phoneNumber);
+
+    /**
+     * Met à jour les informations d'un client existant.
+     * @param id L'identifiant du client à modifier
+     * @param dto Les nouvelles données
+     * @return Le client mis à jour
+     */
+    ClientDto updateClient(Long id, ClientDto dto);
 }

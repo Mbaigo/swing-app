@@ -70,4 +70,23 @@ public class ClientController {
 
         return ResponseEntity.ok(clientService.getByPhone(telephone));
     }
+
+    // ... imports ...
+
+    @Operation(summary = "Mettre à jour un client", description = "Modifie les informations personnelles. Attention : le téléphone doit rester unique.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Mise à jour réussie"),
+            @ApiResponse(responseCode = "404", description = "Client introuvable"),
+            @ApiResponse(responseCode = "400", description = "Données invalides ou conflit de numéro de téléphone")
+    })
+    @PutMapping("/{id}")
+    public ResponseEntity<ClientDto> updateClient(
+            @Parameter(description = "ID du client à modifier")
+            @PathVariable Long id,
+
+            @RequestBody @Valid ClientDto clientDto) {
+
+        ClientDto updatedClient = clientService.updateClient(id, clientDto);
+        return ResponseEntity.ok(updatedClient);
+    }
 }

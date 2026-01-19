@@ -58,6 +58,40 @@ public class ClientServiceImpl implements ClientService {
                     .orElseThrow(() -> new EntityNotFoundException("Aucun client trouvé avec le numéro : " + phoneNumber)));
     }
 
+    /**
+     * Met à jour les informations d'un client existant.
+     * @param id L'identifiant du client à modifier
+     * @param dto Les nouvelles données
+     * @return Le client mis à jour
+     */
+    @Override
+    @Transactional
+    public ClientDto updateClient(Long id, ClientDto dto) {
+        // 1. Récupérer le client existant (ou 404)
+        Client clientToUpdate = clientRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Client introuvable avec l'ID : " + id));
+
+        // 2. Vérification critique : Conflit de numéro de téléphone
+        // Si le numéro change ET que le nouveau numéro existe déjà ailleurs -> Erreur
+        if (!normalizePhone(clientToUpdate.getTelephone()).equals(normalizePhone(dto.telephone()))
+                && clientRepository.existsByTelephone(normalizePhone(dto.telephone()))) {
+            throw new IllegalArgumentException("Le numéro " + dto.telephone() + " est déjà attribué à un autre client.");
+        }
+
+        // 3. Mise à jour des champs
+        clientToUpdate.setNom(dto.nom());
+        clientToUpdate.setPrenom(dto.prenom());
+        clientToUpdate.setTelephone(normalizePhone(dto.telephone()));
+        clientToUpdate.setEmail(dto.email());
+        clientToUpdate.setGenre(dto.genre());
+        clientToUpdate.setNotesMorphologie(dto.notesMorphologie());
+
+        // 4. Sauvegarde
+        Client savedClient = clientRepository.save(clientToUpdate);
+
+        return mapToDto(savedClient);
+    }
+
     // Petit mapper manuel (pour éviter MapStruct pour l'instant)
         private ClientDto mapToDto(Client client) {
             return new ClientDto(
