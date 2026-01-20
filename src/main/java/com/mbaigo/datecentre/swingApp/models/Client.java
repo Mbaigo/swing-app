@@ -1,4 +1,4 @@
-package com.mbaigo.datecentre.swingApp.model;
+package com.mbaigo.datecentre.swingApp.models;
 
 import com.mbaigo.datecentre.swingApp.enums.Genre;
 import jakarta.persistence.*;

@@ -2,8 +2,8 @@ package com.mbaigo.datecentre.swingApp.mappers;
 
 import com.mbaigo.datecentre.swingApp.dto.ClientDto;
 import com.mbaigo.datecentre.swingApp.dto.FicheMesureDto;
-import com.mbaigo.datecentre.swingApp.model.Client;
-import com.mbaigo.datecentre.swingApp.model.FicheMesure;
+import com.mbaigo.datecentre.swingApp.models.Client;
+import com.mbaigo.datecentre.swingApp.models.FicheMesure;
 
 public class MappeToDTO {
 

@@ -1,4 +1,4 @@
-package com.mbaigo.datecentre.swingApp.model;
+package com.mbaigo.datecentre.swingApp.models;
 
 import io.hypersistence.utils.hibernate.type.json.JsonType;
 import jakarta.persistence.*;

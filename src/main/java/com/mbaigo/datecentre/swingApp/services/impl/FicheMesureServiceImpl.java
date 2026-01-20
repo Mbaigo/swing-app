@@ -1,8 +1,8 @@
 package com.mbaigo.datecentre.swingApp.services.impl;
 
 import com.mbaigo.datecentre.swingApp.dto.FicheMesureDto;
-import com.mbaigo.datecentre.swingApp.model.Client;
-import com.mbaigo.datecentre.swingApp.model.FicheMesure;
+import com.mbaigo.datecentre.swingApp.models.Client;
+import com.mbaigo.datecentre.swingApp.models.FicheMesure;
 import com.mbaigo.datecentre.swingApp.repositories.ClientRepository;
 import com.mbaigo.datecentre.swingApp.repositories.FicheMesureRepository;
 import com.mbaigo.datecentre.swingApp.services.FicheMesureService;

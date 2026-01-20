@@ -1,6 +1,6 @@
 package com.mbaigo.datecentre.swingApp.repositories;
 
-import com.mbaigo.datecentre.swingApp.model.FicheMesure;
+import com.mbaigo.datecentre.swingApp.models.FicheMesure;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

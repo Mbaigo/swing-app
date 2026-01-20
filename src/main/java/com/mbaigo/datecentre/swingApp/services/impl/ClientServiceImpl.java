@@ -2,7 +2,7 @@ package com.mbaigo.datecentre.swingApp.services.impl;
 
 
 import com.mbaigo.datecentre.swingApp.dto.ClientDto;
-import com.mbaigo.datecentre.swingApp.model.Client;
+import com.mbaigo.datecentre.swingApp.models.Client;
 import com.mbaigo.datecentre.swingApp.repositories.ClientRepository;
 import com.mbaigo.datecentre.swingApp.services.ClientService;
 import jakarta.persistence.EntityNotFoundException;
