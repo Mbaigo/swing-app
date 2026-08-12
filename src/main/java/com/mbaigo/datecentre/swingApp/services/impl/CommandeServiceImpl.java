@@ -1,10 +1,12 @@
 package com.mbaigo.datecentre.swingApp.services.impl;
 
 import com.mbaigo.datecentre.swingApp.dto.CommandeRequestDto;
-import com.mbaigo.datecentre.swingApp.models.Client;
-import com.mbaigo.datecentre.swingApp.repositories.ClientRepository;
-import com.mbaigo.datecentre.swingApp.repositories.FicheMesureRepository;
-import com.mbaigo.datecentre.swingApp.repositories.StockRepository;
+import com.mbaigo.datecentre.swingApp.enums.StatutCommande;
+import com.mbaigo.datecentre.swingApp.models.*;
+import com.mbaigo.datecentre.swingApp.models.next.ArticleStock;
+import com.mbaigo.datecentre.swingApp.models.next.CompositionModele;
+import com.mbaigo.datecentre.swingApp.models.next.LigneCommande;
+import com.mbaigo.datecentre.swingApp.repositories.*;
 import com.mbaigo.datecentre.swingApp.services.StockService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;

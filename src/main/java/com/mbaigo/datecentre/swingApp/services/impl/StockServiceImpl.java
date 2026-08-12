@@ -1,7 +1,7 @@
 package com.mbaigo.datecentre.swingApp.services.impl;
 
 import com.mbaigo.datecentre.swingApp.dto.ArticleStockDto;
-import com.mbaigo.datecentre.swingApp.models.ArticleStock;
+import com.mbaigo.datecentre.swingApp.models.next.ArticleStock;
 import com.mbaigo.datecentre.swingApp.repositories.StockRepository;
 import com.mbaigo.datecentre.swingApp.services.StockService;
 import jakarta.persistence.EntityNotFoundException;

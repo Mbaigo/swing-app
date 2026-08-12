@@ -1,5 +1,6 @@
 package com.mbaigo.datecentre.swingApp.models;
 import com.mbaigo.datecentre.swingApp.enums.StatutCommande;
+import com.mbaigo.datecentre.swingApp.models.next.LigneCommande;
 import jakarta.persistence.*;
 import lombok.*;
 import java.math.BigDecimal;

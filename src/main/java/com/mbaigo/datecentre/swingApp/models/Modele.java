@@ -1,5 +1,6 @@
 package com.mbaigo.datecentre.swingApp.models;
 
+import com.mbaigo.datecentre.swingApp.models.next.CompositionModele;
 import jakarta.persistence.*;
 import lombok.*;
 import java.math.BigDecimal;

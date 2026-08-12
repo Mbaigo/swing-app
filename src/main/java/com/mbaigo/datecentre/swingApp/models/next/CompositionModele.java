@@ -1,5 +1,6 @@
-package com.mbaigo.datecentre.swingApp.models;
+package com.mbaigo.datecentre.swingApp.models.next;
 
+import com.mbaigo.datecentre.swingApp.models.Modele;
 import jakarta.persistence.*;
 import lombok.*;
 

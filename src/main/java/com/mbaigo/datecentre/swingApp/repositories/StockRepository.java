@@ -1,7 +1,7 @@
 package com.mbaigo.datecentre.swingApp.repositories;
 
 import com.mbaigo.datecentre.swingApp.enums.CategorieArticle;
-import com.mbaigo.datecentre.swingApp.models.ArticleStock;
+import com.mbaigo.datecentre.swingApp.models.next.ArticleStock;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
