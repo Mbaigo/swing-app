@@ -1,16 +1,18 @@
 package com.mbaigo.datecentre.swingApp.controllers;
 
-import com.mbaigo.datecentre.swingApp.dto.FicheMesureDto;
+import com.mbaigo.datecentre.swingApp.dto.FicheMesureRequestDTO;
+import com.mbaigo.datecentre.swingApp.dto.FicheMesureResponseDTO;
 import com.mbaigo.datecentre.swingApp.services.FicheMesureService;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
+import java.net.URI;
 import java.util.List;
 
 @RestController
@@ -19,38 +21,51 @@ import java.util.List;
 @Tag(name = "Mesures", description = "Gestion des fiches de mensurations (JSONB)")
 @CrossOrigin(origins = "http://localhost:5173")
 public class FicheMesureController {
+    private final FicheMesureService ficheMesureService;
 
-    private final FicheMesureService ficheService;
-
-    @Operation(summary = "Ajouter une fiche de mesures")
+    // --- US : Créer une fiche ---
     @PostMapping
-    public ResponseEntity<Long> createFiche(@RequestBody @Valid FicheMesureDto dto) {
-        Long id = ficheService.createFiche(dto);
-        return ResponseEntity.status(HttpStatus.CREATED).body(id);
+    @PreAuthorize("hasAnyRole('MANAGER','TAILOR')")
+    public ResponseEntity<FicheMesureResponseDTO> createFicheMesure(@Valid @RequestBody FicheMesureRequestDTO requestDTO) {
+        FicheMesureResponseDTO createdFiche = ficheMesureService.createFicheMesure(requestDTO);
+
+        URI location = ServletUriComponentsBuilder.fromCurrentRequest()
+                .path("/{id}")
+                .buildAndExpand(createdFiche.id())
+                .toUri();
+
+        return ResponseEntity.created(location).body(createdFiche);
     }
 
-    @Operation(summary = "Récupérer l'historique d'un client")
-    @GetMapping("/client/{clientId}")
-    public ResponseEntity<List<FicheMesureDto>> getFichesByClient(@PathVariable Long clientId) {
-        return ResponseEntity.ok(ficheService.getFichesByClient(clientId));
-    }
-
-    @Operation(summary = "Détail d'une fiche")
+    // --- US : Récupérer une fiche précise ---
     @GetMapping("/{id}")
-    public ResponseEntity<FicheMesureDto> getFicheById(@PathVariable Long id) {
-        return ResponseEntity.ok(ficheService.getFicheById(id));
+    @PreAuthorize("hasAnyRole('MANAGER', 'TAILOR')")
+    public ResponseEntity<FicheMesureResponseDTO> getFicheById(@PathVariable Long id) {
+        return ResponseEntity.ok(ficheMesureService.getFicheById(id));
     }
 
-    // ... imports existants ...
+    // --- US : Consulter l'historique d'un client (Le plus récent en premier) ---
+    @GetMapping("/client/{clientId}")
+    @PreAuthorize("hasAnyRole('MANAGER', 'TAILOR')")
+    public ResponseEntity<List<FicheMesureResponseDTO>> getFichesByClientId(@PathVariable Long clientId) {
+        return ResponseEntity.ok(ficheMesureService.getFichesByClientId(clientId));
+    }
 
-    @Operation(summary = "Modifier une fiche existante", description = "Met à jour les mesures (JSON) ou le nom du projet.")
-    @ApiResponse(responseCode = "200", description = "Fiche mise à jour")
+    // --- US : Mettre à jour une fiche ---
     @PutMapping("/{id}")
-    public ResponseEntity<FicheMesureDto> updateFiche(
+    @PreAuthorize("hasAnyRole('MANAGER', 'TAILOR')")
+    public ResponseEntity<FicheMesureResponseDTO> updateFicheMesure(
             @PathVariable Long id,
-            @RequestBody @Valid FicheMesureDto dto) {
+            @Valid @RequestBody FicheMesureRequestDTO requestDTO) {
+        return ResponseEntity.ok(ficheMesureService.updateFicheMesure(id, requestDTO));
+    }
 
-        FicheMesureDto updated = ficheService.updateFiche(id, dto);
-        return ResponseEntity.ok(updated);
+    // --- US : Récupérer TOUTES les fiches de mesures (Paginé) ---
+    @GetMapping
+    @PreAuthorize("hasAnyRole('MANAGER', 'TAILOR')")
+    public ResponseEntity<Page<FicheMesureResponseDTO>> getAllFiches(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        return ResponseEntity.ok(ficheMesureService.getAllFiches(page, size));
     }
 }

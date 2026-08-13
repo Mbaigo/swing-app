@@ -1,107 +1,94 @@
 package com.mbaigo.datecentre.swingApp.services.impl;
 
 
-import com.mbaigo.datecentre.swingApp.dto.ClientDto;
+import com.mbaigo.datecentre.swingApp.dto.ClientRequestDTO;
+import com.mbaigo.datecentre.swingApp.dto.ClientResponseDTO;
+import com.mbaigo.datecentre.swingApp.dto.mappers.ClientMapper;
 import com.mbaigo.datecentre.swingApp.models.Client;
 import com.mbaigo.datecentre.swingApp.repositories.ClientRepository;
 import com.mbaigo.datecentre.swingApp.services.ClientService;
+import com.mbaigo.datecentre.swingApp.utilities.Util;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
 import java.util.Optional;
-
-import static com.mbaigo.datecentre.swingApp.utilities.Util.normalizePhone;
 
 @Service
 @RequiredArgsConstructor
 public class ClientServiceImpl implements ClientService {
 
-        private final ClientRepository clientRepository;
 
-        public List<ClientDto> getAllClients() {
-            return clientRepository.findAll().stream()
-                    .map(this::mapToDto)
-                    .toList();
-        }
+    private final ClientRepository clientRepository;
+    private final ClientMapper clientMapper; // Injection du Mapper
 
-        @Transactional
-        public Long createClient(ClientDto dto) {
-            if (clientRepository.existsByTelephone(dto.telephone())) {
-                throw new IllegalArgumentException("Un client avec ce numero de téléphone existe déjà.");
-            }
+   /* private String normaliserTelephone(String telephone) {
+        if (telephone == null) return null;
+        return telephone.replaceAll("[^\\d+]", "");
+    }*/
 
-            Client client = Client.builder()
-                    .nom(dto.nom())
-                    .prenom(dto.prenom())
-                    .telephone(normalizePhone(dto.telephone()))
-                    .email(dto.email())
-                    .genre(dto.genre())
-                    .notesMorphologie(dto.notesMorphologie())
-                    .build();
-
-            return clientRepository.save(client).getId();
-        }
-
-    @Override
-    public ClientDto getClientById(Long id) {
-        return null;
-    }
-
-    @Override
-    public Optional<ClientDto> getByPhone(String phoneNumber) {
-        String cleanPhone = normalizePhone(phoneNumber);
-            return Optional.ofNullable(clientRepository.findByTelephone(cleanPhone)
-                    .map(this::mapToDto)
-                    .orElseThrow(() -> new EntityNotFoundException("Aucun client trouvé avec le numéro : " + phoneNumber)));
-    }
-
-    /**
-     * Met à jour les informations d'un client existant.
-     * @param id L'identifiant du client à modifier
-     * @param dto Les nouvelles données
-     * @return Le client mis à jour
-     */
     @Override
     @Transactional
-    public ClientDto updateClient(Long id, ClientDto dto) {
-        // 1. Récupérer le client existant (ou 404)
-        Client clientToUpdate = clientRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Client introuvable avec l'ID : " + id));
+    public ClientResponseDTO createClient(ClientRequestDTO dto) {
+        String telNormalise = Util.normalizePhone(dto.telephone());
 
-        // 2. Vérification critique : Conflit de numéro de téléphone
-        // Si le numéro change ET que le nouveau numéro existe déjà ailleurs -> Erreur
-        if (!normalizePhone(clientToUpdate.getTelephone()).equals(normalizePhone(dto.telephone()))
-                && clientRepository.existsByTelephone(normalizePhone(dto.telephone()))) {
-            throw new IllegalArgumentException("Le numéro " + dto.telephone() + " est déjà attribué à un autre client.");
+        if (clientRepository.existsByTelephone(telNormalise)) {
+            throw new IllegalArgumentException("Un client avec le numéro " + telNormalise + " existe déjà.");
         }
 
-        // 3. Mise à jour des champs
-        clientToUpdate.setNom(dto.nom());
-        clientToUpdate.setPrenom(dto.prenom());
-        clientToUpdate.setTelephone(normalizePhone(dto.telephone()));
-        clientToUpdate.setEmail(dto.email());
-        clientToUpdate.setGenre(dto.genre());
-        clientToUpdate.setNotesMorphologie(dto.notesMorphologie());
+        // Appel propre au mapper
+        Client client = clientMapper.toEntity(dto, telNormalise);
+        Client savedClient = clientRepository.save(client);
 
-        // 4. Sauvegarde
-        Client savedClient = clientRepository.save(clientToUpdate);
-
-        return mapToDto(savedClient);
+        return clientMapper.toDto(savedClient);
     }
 
-    // Petit mapper manuel (pour éviter MapStruct pour l'instant)
-        private ClientDto mapToDto(Client client) {
-            return new ClientDto(
-                    client.getId(),
-                    client.getNom(),
-                    client.getPrenom(),
-                    client.getTelephone(),
-                    client.getEmail(),
-                    client.getGenre(),
-                    client.getNotesMorphologie()
-            );
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<ClientResponseDTO> getClientByTelephone(String telephone) {
+        String telNormalise = Util.normalizePhone(telephone);
+
+        return Optional.of(clientRepository.findByTelephone(telNormalise)
+                .map(clientMapper::toDto) // Utilisation élégante avec les method references
+                .orElseThrow(() -> new EntityNotFoundException("Aucun client trouvé avec le numéro : " + telNormalise)));
+    }
+
+    @Override
+    @Transactional
+    public ClientResponseDTO updateClient(Long id, ClientRequestDTO dto) {
+        Client clientExistant = clientRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Client introuvable (ID: " + id + ")"));
+
+        String nouveauTelNormalise = Util.normalizePhone(dto.telephone());
+
+        if (!clientExistant.getTelephone().equals(nouveauTelNormalise)
+                && clientRepository.existsByTelephone(nouveauTelNormalise)) {
+            throw new IllegalArgumentException("Le numéro " + nouveauTelNormalise + " est déjà utilisé.");
         }
+
+        // Le mapper s'occupe d'écraser les anciennes valeurs par les nouvelles
+        clientMapper.updateEntityFromDto(clientExistant, dto, nouveauTelNormalise);
+
+        return clientMapper.toDto(clientRepository.save(clientExistant));
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<ClientResponseDTO> getAllClients(int page, int size) {
+        // On crée la requête de pagination (Page 0 par défaut, triée par nom de A à Z)
+        Pageable pageable = PageRequest.of(page, size, Sort.by("nom").ascending());
+        return clientRepository.findAll(pageable)
+                .map(clientMapper::toDto);
+    }
+
+    @Override
+    public Optional<ClientResponseDTO> getClientById(Long id) {
+        return clientRepository.findById(id).map(clientMapper::toDto);
+    }
+
+}

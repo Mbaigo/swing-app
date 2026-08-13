@@ -1,9 +1,9 @@
+server:
+  port: 8088
 # Nom de l'application
 spring:
   application:
     name: swingApp
-
-
   # Connexion DB (Doit correspondre au docker-compose.yml)
   datasource:
     url: jdbc:postgresql://localhost:5432/couture_erp
@@ -30,4 +30,17 @@ spring:
       enabled: true
   rsocket:
     server:
-      port: 8080
+      port: 8088
+
+      # Configuration de la sécurité (Resource Server)
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          # C'est l'URL exacte de ton Realm.
+          # Spring Boot va appeler cette URL au démarrage pour récupérer les clés publiques de Keycloak.
+          issuer-uri: http://localhost:9090/realms/lex-couture
+  # Configuration Swagger (Pour pouvoir envoyer le token via l'interface)
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html

@@ -23,3 +23,16 @@ services:
       - "5050:80"
     depends_on:
       - postgres
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:24.0 # Version stable récente
+    container_name: couture_keycloak
+    environment:
+      - KEYCLOAK_ADMIN=admin
+      - KEYCLOAK_ADMIN_PASSWORD=admin
+      # Optimisations pour éviter les avertissements en dev
+      - KC_HEALTH_ENABLED=true
+      - KC_METRICS_ENABLED=true
+    command: start-dev
+    ports:
+      - "9090:8080"

@@ -1,9 +1,10 @@
-package com.mbaigo.swingapp.service.customer.customer_service.dto.mappers;
+package com.mbaigo.datecentre.swingApp.dto.mappers;
 
-import com.mbaigo.swingapp.service.customer.customer_service.dto.FicheMesureRequestDTO;
-import com.mbaigo.swingapp.service.customer.customer_service.dto.FicheMesureResponseDTO;
-import com.mbaigo.swingapp.service.customer.customer_service.models.Client;
-import com.mbaigo.swingapp.service.customer.customer_service.models.FicheMesure;
+
+import com.mbaigo.datecentre.swingApp.dto.FicheMesureRequestDTO;
+import com.mbaigo.datecentre.swingApp.dto.FicheMesureResponseDTO;
+import com.mbaigo.datecentre.swingApp.models.Client;
+import com.mbaigo.datecentre.swingApp.models.FicheMesure;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;

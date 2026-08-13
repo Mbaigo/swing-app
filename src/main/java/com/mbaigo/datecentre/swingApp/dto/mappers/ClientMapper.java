@@ -1,8 +1,8 @@
-package com.mbaigo.swingapp.service.customer.customer_service.dto.mappers;
+package com.mbaigo.datecentre.swingApp.dto.mappers;
 
-import com.mbaigo.swingapp.service.customer.customer_service.dto.ClientRequestDTO;
-import com.mbaigo.swingapp.service.customer.customer_service.dto.ClientResponseDTO;
-import com.mbaigo.swingapp.service.customer.customer_service.models.Client;
+import com.mbaigo.datecentre.swingApp.dto.ClientRequestDTO;
+import com.mbaigo.datecentre.swingApp.dto.ClientResponseDTO;
+import com.mbaigo.datecentre.swingApp.models.Client;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;

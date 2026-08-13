@@ -1,6 +1,8 @@
 package com.mbaigo.datecentre.swingApp.controllers;
 
 import com.mbaigo.datecentre.swingApp.dto.ClientDto;
+import com.mbaigo.datecentre.swingApp.dto.ClientRequestDTO;
+import com.mbaigo.datecentre.swingApp.dto.ClientResponseDTO;
 import com.mbaigo.datecentre.swingApp.services.ClientService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -9,10 +11,14 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
+import java.net.URI;
 import java.util.List;
 import java.util.Optional;
 
@@ -23,70 +29,54 @@ import java.util.Optional;
 @CrossOrigin(origins = "http://localhost:5173") // Pour ton futur Frontend Vue.js
 public class ClientController {
 
-    private final ClientService clientService;
+        private final ClientService clientService;
 
-    @Operation(summary = "Lister tous les clients", description = "Retourne la liste complète des clients enregistrés.")
-    @ApiResponse(responseCode = "200", description = "Liste récupérée avec succès")
-    @GetMapping
-    public ResponseEntity<List<ClientDto>> getAllClients() {
-        List<ClientDto> clients = clientService.getAllClients();
+        // US : Récupérer un client par son ID
+        @GetMapping("/{id}")
+        @PreAuthorize("hasAnyRole('MANAGER', 'TAILOR')")
+        public ResponseEntity<ClientResponseDTO> getClientById(@PathVariable Long id) {
+            Optional<ClientResponseDTO> clientOpt = clientService.getClientById(id);
 
-        if (clients.isEmpty()) {
-            // 204 No Content est souvent préférable si la liste est vide,
-            // mais 200 OK avec tableau vide est aussi standard. À toi de choisir.
-            return ResponseEntity.noContent().build();
+            return clientOpt
+                    .map(ResponseEntity::ok) // Si trouvé -> HTTP 200 avec le DTO en JSON
+                    .orElse(ResponseEntity.notFound().build()); // Si absent -> HTTP 404 Not Found
         }
 
-        return ResponseEntity.ok(clients); // 200 OK
-    }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<ClientDto> getClientById(@PathVariable Long id) {
-        // Le service lance une exception si pas trouvé, gérée par un @ControllerAdvice (voir plus bas)
-        // ou on peut faire un try/catch ici, mais le mieux est de laisser le service gérer la logique.
-        return ResponseEntity.ok(clientService.getClientById(id));
-    }
+        // Récupérer tous les clients
+        @GetMapping
+        @PreAuthorize("hasAnyRole('MANAGER', 'TAILOR')")
+        public ResponseEntity<Page<ClientResponseDTO>> getAllClients(
+                @RequestParam(defaultValue = "0") int page,
+                @RequestParam(defaultValue = "10") int size) {
+            return ResponseEntity.ok(clientService.getAllClients(page, size));
+        }
 
-    @Operation(summary = "Créer un nouveau client", description = "Enregistre un client avec validation des données.")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "201", description = "Client créé avec succès"),
-            @ApiResponse(responseCode = "400", description = "Données invalides ou téléphone déjà existant")
-    })
-    @PostMapping
-    public ResponseEntity<Long> createClient(@RequestBody @Valid ClientDto clientDto) {
-        Long id = clientService.createClient(clientDto);
-        return ResponseEntity.status(HttpStatus.CREATED).body(id); // 201 Created
-    }
+        // US 1.2 : Recherche rapide par téléphone (ex: /api/v1/clients/search?telephone=+2376000000)
+        @GetMapping("/search")
+        @PreAuthorize("hasAnyRole('MANAGER', 'TAILOR')")
+        public ResponseEntity<Optional<ClientResponseDTO>> searchByTelephone(@RequestParam String telephone) {
+            return ResponseEntity.ok(clientService.getClientByTelephone(telephone));
+        }
 
-    @Operation(summary = "Rechercher par téléphone", description = "Retrouve la fiche d'un client via son numéro exact.")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Client trouvé"),
-            @ApiResponse(responseCode = "404", description = "Numéro inconnu")
-    })
-    @GetMapping("/search")
-    public ResponseEntity<Optional<ClientDto>> getClientByPhone(
-            @Parameter(description = "Le numéro de téléphone exact (ex: 0612345678)", required = true)
-            @RequestParam("phone") String telephone) {
+        // US 1.1 : Création
+        @PostMapping
+        @PreAuthorize("hasAnyRole('MANAGER','TAILOR')")
+        public ResponseEntity<ClientResponseDTO> createClient(@Valid @RequestBody ClientRequestDTO requestDTO) {
+            ClientResponseDTO createdClient = clientService.createClient(requestDTO);
+            URI location = ServletUriComponentsBuilder.fromCurrentRequest()
+                    .path("/{id}")
+                    .buildAndExpand(createdClient.id())
+                    .toUri();
+            return ResponseEntity.created(location).body(createdClient);
+        }
 
-        return ResponseEntity.ok(clientService.getByPhone(telephone));
-    }
-
-    // ... imports ...
-
-    @Operation(summary = "Mettre à jour un client", description = "Modifie les informations personnelles. Attention : le téléphone doit rester unique.")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Mise à jour réussie"),
-            @ApiResponse(responseCode = "404", description = "Client introuvable"),
-            @ApiResponse(responseCode = "400", description = "Données invalides ou conflit de numéro de téléphone")
-    })
-    @PutMapping("/{id}")
-    public ResponseEntity<ClientDto> updateClient(
-            @Parameter(description = "ID du client à modifier")
-            @PathVariable Long id,
-
-            @RequestBody @Valid ClientDto clientDto) {
-
-        ClientDto updatedClient = clientService.updateClient(id, clientDto);
-        return ResponseEntity.ok(updatedClient);
-    }
+        // US 1.3 : Mise à jour
+        @PutMapping("/{id}")
+        @PreAuthorize("hasAnyRole('MANAGER')")
+        public ResponseEntity<ClientResponseDTO> updateClient(
+                @PathVariable Long id,
+                @Valid @RequestBody ClientRequestDTO requestDTO) {
+            return ResponseEntity.ok(clientService.updateClient(id, requestDTO));
+        }
 }
