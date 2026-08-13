@@ -7,11 +7,11 @@ import java.math.BigDecimal;
 
 @Entity
 @Table(name = "lignes_commande")
-@Data
+@Getter @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class LigneCommande {
+public class LigneCommandes {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

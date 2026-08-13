@@ -1,11 +1,9 @@
 package com.mbaigo.datecentre.swingApp.enums;
 
 public enum StatutCommande {
-    EN_ATTENTE,      // Devis accepté, en attente de démarrage
-    EN_COURS,        // Coupe ou Couture commencée
-    ESSAYAGE,        // Prêt pour essayage client
-    A_REPRENDRE,     // Retouches nécessaires après essayage
-    TERMINEE,        // Prêt à livrer
-    LIVREE,          // Client parti avec
+    CREEE,          // 0. Dès la création
+    EN_CONFECTION,  // 1. L'artisan coupe et coud
+    ESSAYAGE,       // 2. Le client vient tester
+    TERMINEE,       // 3. Facturée et livrée
     ANNULEE
 }

@@ -6,6 +6,8 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import lombok.*;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "clients")
@@ -42,6 +44,10 @@ public class Client {
 
     @Column(updatable = false)
     private LocalDateTime dateCreation;
+
+    @OneToMany(mappedBy = "client", cascade = CascadeType.ALL)
+    @Builder.Default
+    private List<Commande> commandes = new ArrayList<>();
 
     @PrePersist
     protected void onCreate() {

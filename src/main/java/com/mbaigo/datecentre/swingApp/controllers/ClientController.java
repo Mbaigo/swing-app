@@ -1,25 +1,18 @@
 package com.mbaigo.datecentre.swingApp.controllers;
 
-import com.mbaigo.datecentre.swingApp.dto.ClientDto;
 import com.mbaigo.datecentre.swingApp.dto.ClientRequestDTO;
 import com.mbaigo.datecentre.swingApp.dto.ClientResponseDTO;
 import com.mbaigo.datecentre.swingApp.services.ClientService;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.net.URI;
-import java.util.List;
 import java.util.Optional;
 
 @RestController

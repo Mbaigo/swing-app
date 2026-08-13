@@ -1,0 +1,33 @@
+import { defineConfig } from 'vite'
+import vue from '@vitejs/plugin-vue'
+import { VitePWA } from 'vite-plugin-pwa'
+
+export default defineConfig({
+  plugins: [
+    vue(),
+    VitePWA({
+      registerType: 'autoUpdate',
+      workbox: {
+        runtimeCaching: [
+          {
+            // On cible spécifiquement les URLs de Firebase Storage
+            urlPattern: /^https:\/\/firebasestorage\.googleapis\.com\/.*/i,
+            // Stratégie : On cherche d'abord dans le cache local.
+            // Si l'image n'y est pas, on va la chercher sur le réseau puis on la cache.
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'maquettes-images-cache',
+              expiration: {
+                maxEntries: 500, // Garde un maximum de 500 images sur le téléphone/PC
+                maxAgeSeconds: 60 * 60 * 24 * 30 // Garde l'image pendant 30 jours
+              },
+              cacheableResponse: {
+                statuses: [0, 200]
+              }
+            }
+          }
+        ]
+      }
+    })
+  ]
+})

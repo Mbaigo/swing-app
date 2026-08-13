@@ -1,101 +1,167 @@
 package com.mbaigo.datecentre.swingApp.services.impl;
 
-import com.mbaigo.datecentre.swingApp.dto.CommandeRequestDto;
+import com.mbaigo.datecentre.swingApp.dto.CommandeRequestDTO;
+import com.mbaigo.datecentre.swingApp.dto.CommandeResponseDTO;
+import com.mbaigo.datecentre.swingApp.dto.LigneCommandeRequestDTO;
+import com.mbaigo.datecentre.swingApp.dto.mappers.CommandeMapper;
 import com.mbaigo.datecentre.swingApp.enums.StatutCommande;
 import com.mbaigo.datecentre.swingApp.models.*;
-import com.mbaigo.datecentre.swingApp.models.next.ArticleStock;
-import com.mbaigo.datecentre.swingApp.models.next.CompositionModele;
-import com.mbaigo.datecentre.swingApp.models.next.LigneCommande;
+import com.mbaigo.datecentre.swingApp.models.LigneCommande;
 import com.mbaigo.datecentre.swingApp.repositories.*;
-import com.mbaigo.datecentre.swingApp.services.StockService;
+import com.mbaigo.datecentre.swingApp.services.CommandeService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
-import java.util.UUID;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
-public class CommandeServiceImpl {
+public class CommandeServiceImpl implements CommandeService {
 
     private final CommandeRepository commandeRepository;
+    private final CommandeMapper mapper;
     private final ClientRepository clientRepository;
-    private final ModeleRepository modeleRepository;
-    private final FicheMesureRepository ficheMesureRepository;
-    private final StockRepository stockRepository;
-    private final StockService stockService; // Pour utiliser le débit sécurisé
 
     @Transactional
-    public Long createCommande(CommandeRequestDto dto) {
-        // 1. Chargement des entités principales
-        Client client = clientRepository.findById(dto.clientId())
+    @Override
+    public CommandeResponseDTO creerCommande(CommandeRequestDTO request) {
+        // 1. Récupération du client
+        Client client = clientRepository.findById(request.clientId())
                 .orElseThrow(() -> new EntityNotFoundException("Client introuvable"));
 
-        Modele modele = modeleRepository.findById(dto.modeleId())
-                .orElseThrow(() -> new EntityNotFoundException("Modèle introuvable"));
-
-        FicheMesure fiche = null;
-        if (dto.ficheMesureId() != null) {
-            fiche = ficheMesureRepository.findById(dto.ficheMesureId())
-                    .orElseThrow(() -> new EntityNotFoundException("Fiche mesure introuvable"));
-        }
-
         // 2. Initialisation de la commande
-        Commande commande = Commande.builder()
-                .reference("CMD-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase())
-                .client(client)
-                .modele(modele)
-                .ficheMesure(fiche)
-                .dateCommande(LocalDate.now())
-                .dateLivraisonPrevue(dto.dateLivraisonPrevue())
-                .statut(StatutCommande.EN_ATTENTE)
-                .acompteVerse(dto.acompte())
-                .build();
+        Commande commande = new Commande();
+        commande.setReference("CMD-" + System.currentTimeMillis());
+        commande.setDateCommande(LocalDateTime.now());
+        commande.setDateLivraison(request.dateLivraison());
+        commande.setStatut(StatutCommande.CREEE);
+        commande.setClient(client);
 
-        // 3. Calcul du coût matériel et gestion du stock
-        BigDecimal coutMaterielTotal = BigDecimal.ZERO;
-
-        // On parcourt la recette du modèle
-        for (CompositionModele compo : modele.getComposition()) {
-
-            ArticleStock articleFinal = compo.getArticle();
-            Double quantiteFinale = compo.getQuantiteRequise();
-
-            // LOGIQUE DE SUBSTITUTION (Si le client veut un autre tissu)
-            if (dto.substitutionMateriaux() != null && dto.substitutionMateriaux().containsKey(articleFinal.getId())) {
-                Long nouvelArticleId = dto.substitutionMateriaux().get(articleFinal.getId());
-                articleFinal = stockRepository.findById(nouvelArticleId)
-                        .orElseThrow(() -> new EntityNotFoundException("Article de remplacement introuvable (ID: " + nouvelArticleId + ")"));
-            }
-
-            // A. Débit du stock (Lève une exception si stock insuffisant)
-            stockService.debiterStock(articleFinal.getId(), quantiteFinale);
-
-            // B. Calcul du coût de cette ligne (Prix achat * Quantité)
-            BigDecimal coutLigne = articleFinal.getPrixAchatUnitaire()
-                    .multiply(BigDecimal.valueOf(quantiteFinale));
-
-            coutMaterielTotal = coutMaterielTotal.add(coutLigne);
-
-            // C. Ajout de la ligne de consommation à la commande
+        // 3. Construction des lignes et des images
+        for (LigneCommandeRequestDTO ligneDTO : request.lignes()) {
             LigneCommande ligne = LigneCommande.builder()
-                    .article(articleFinal)
-                    .quantite(quantiteFinale)
-                    .prixUnitaireFacture(articleFinal.getPrixAchatUnitaire())
+                    .nomMaquette(ligneDTO.nomMaquette())
+                    .quantite(ligneDTO.quantite())
+                    .prixConfection(ligneDTO.prixConfection())
                     .build();
 
+            // Ajout des multiples images
+            if (ligneDTO.imagesUrl() != null) {
+                for (String url : ligneDTO.imagesUrl()) {
+                    ligne.addImage(ImageMaquette.builder().url(url).build());
+                }
+            }
+
+            ligne.calculerSousTotal();
             commande.addLigne(ligne);
         }
 
-        // 4. Calcul du Prix Total (Main d'œuvre du modèle + Matériel consommé)
-        // Optionnel : Tu peux ajouter une marge ici (ex: * 1.5)
-        BigDecimal prixTotal = modele.getCoutMainDoeuvre().add(coutMaterielTotal);
-        commande.setPrixTotal(prixTotal);
+        commande.calculerCoutTotal();
+        Commande savedCommande = commandeRepository.save(commande);
 
-        // 5. Sauvegarde
-        return commandeRepository.save(commande).getId();
+        return mapper.toResponse(savedCommande);
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public CommandeResponseDTO getCommandeById(Long id) {
+        Commande commande = commandeRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Commande introuvable avec l'ID: " + id));
+        return mapper.toResponse(commande);
+    }
+
+    @Transactional
+    @Override
+    public CommandeResponseDTO mettreAJourStatut(Long id, StatutCommande nouveauStatut) {
+        Commande commande = commandeRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Commande introuvable"));
+
+        commande.setStatut(nouveauStatut);
+        // Hibernate détecte le changement et fera l'UPDATE automatiquement
+        return mapper.toResponse(commande);
+    }
+
+    @Transactional
+    @Override
+    public void supprimerCommande(Long id) {
+        if (!commandeRepository.existsById(id)) {
+            throw new EntityNotFoundException("Commande introuvable");
+        }
+        commandeRepository.deleteById(id);
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public Page<CommandeResponseDTO> getAllCommandes(Pageable pageable) {
+        return commandeRepository.findAll(pageable)
+                .map(mapper::toResponse);
+    }
+
+    // --- LOGIQUE TEMPORELLE ---
+
+    @Transactional(readOnly = true)
+    @Override
+    public Page<CommandeResponseDTO> getCommandesParJour(LocalDate date, Pageable pageable) {
+        // Ex: De 2026-06-01T00:00:00 à 2026-06-01T23:59:59.999999999
+        LocalDateTime debutJournee = date.atStartOfDay();
+        LocalDateTime finJournee = date.atTime(LocalTime.MAX);
+
+        return commandeRepository.findByDateCommandeBetween(debutJournee, finJournee, pageable)
+                .map(mapper::toResponse);
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public Page<CommandeResponseDTO> getCommandesParSemaine(LocalDate dateDansLaSemaine, Pageable pageable) {
+        // 1. On trouve le Lundi de cette semaine-là
+        LocalDate lundi = dateDansLaSemaine.with(DayOfWeek.MONDAY);
+        // 2. On trouve le Dimanche de cette semaine-là
+        LocalDate dimanche = dateDansLaSemaine.with(DayOfWeek.SUNDAY);
+
+        // 3. On convertit en LocalDateTime pour couvrir l'intervalle complet
+        LocalDateTime debutSemaine = lundi.atStartOfDay();
+        LocalDateTime finSemaine = dimanche.atTime(LocalTime.MAX);
+
+        return commandeRepository.findByDateCommandeBetween(debutSemaine, finSemaine, pageable)
+                .map(mapper::toResponse);
+    }
+
+
+    // Dans CommandeServiceImpl.java
+
+    // --- LOGIQUE DES LIVRAISONS ---
+
+    @Transactional(readOnly = true)
+    @Override
+    public Page<CommandeResponseDTO> getCommandesALivrerAujourdhui(Pageable pageable) {
+        // Récupère la date du jour (ex: 2026-08-13)
+        LocalDate aujourdhui = LocalDate.now();
+
+        return commandeRepository.findByDateLivraison(aujourdhui, pageable)
+                .map(mapper::toResponse);
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public Page<CommandeResponseDTO> getCommandesALivrerCetteSemaine(Pageable pageable) {
+        LocalDate aujourdhui = LocalDate.now();
+
+        // 1. Détermine le Lundi de la semaine actuelle
+        LocalDate lundi = aujourdhui.with(DayOfWeek.MONDAY);
+
+        // 2. Détermine le Dimanche de la semaine actuelle
+        LocalDate dimanche = aujourdhui.with(DayOfWeek.SUNDAY);
+
+        // 3. Récupère toutes les livraisons prévues entre ce Lundi et ce Dimanche inclus
+        return commandeRepository.findByDateLivraisonBetween(lundi, dimanche, pageable)
+                .map(mapper::toResponse);
     }
 }

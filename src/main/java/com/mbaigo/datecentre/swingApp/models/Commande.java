@@ -1,58 +1,58 @@
 package com.mbaigo.datecentre.swingApp.models;
 import com.mbaigo.datecentre.swingApp.enums.StatutCommande;
-import com.mbaigo.datecentre.swingApp.models.next.LigneCommande;
 import jakarta.persistence.*;
 import lombok.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
 @Entity
 @Table(name = "commandes")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class Commande {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(unique = true, nullable = false)
-    private String reference;
+    @Column(nullable = false, unique = true, length = 50)
+    private String reference; // ex: CMD-2026-001
 
-    @ManyToOne
-    @JoinColumn(name = "client_id", nullable = false)
-    private Client client;
+    @Column(name = "date_commande", nullable = false)
+    private LocalDateTime dateCommande;
 
-    @ManyToOne
-    @JoinColumn(name = "modele_id", nullable = false)
-    private Modele modele; // Le patron utilisé
+    @Column(name = "date_livraison", nullable = false)
+    private LocalDate dateLivraison;
 
-    @ManyToOne
-    @JoinColumn(name = "fiche_mesure_id")
-    private FicheMesure ficheMesure; // Les mesures utilisées
-
-    private LocalDate dateCommande;
-    private LocalDate dateLivraisonPrevue;
+    @Column(name = "cout_total", nullable = false, precision = 12, scale = 2)
+    private BigDecimal coutTotal;
 
     @Enumerated(EnumType.STRING)
-    private StatutCommande statut;
+    @Column(nullable = false)
+    private StatutCommande statut; // EN_ATTENTE, EN_COURS, PRETE, LIVREE, ANNULEE
 
-    // Prix calculé automatiquement (Matériel + Main d'œuvre)
-    private BigDecimal prixTotal;
-    private BigDecimal acompteVerse;
+    // Dans Commande.java
 
-    // Liste des matériaux *réellement* consommés pour CETTE commande
-    // (car on peut changer le tissu par rapport au modèle de base)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "client_id", nullable = false)
+    private Client client;
     @OneToMany(mappedBy = "commande", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
-    private List<LigneCommande> lignesConsommmation = new ArrayList<>();
+    private List<LigneCommande> lignes = new ArrayList<>();
+
+    public void calculerCoutTotal() {
+        this.coutTotal = lignes.stream()
+                .map(LigneCommande::getSousTotal)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
 
     public void addLigne(LigneCommande ligne) {
-        lignesConsommmation.add(ligne);
+        lignes.add(ligne);
         ligne.setCommande(this);
     }
 }
