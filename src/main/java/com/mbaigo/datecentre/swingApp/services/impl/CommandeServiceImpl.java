@@ -16,11 +16,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.DayOfWeek;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.util.Optional;
+import java.time.*;
 
 @Service
 @RequiredArgsConstructor
@@ -162,6 +158,33 @@ public class CommandeServiceImpl implements CommandeService {
 
         // 3. Récupère toutes les livraisons prévues entre ce Lundi et ce Dimanche inclus
         return commandeRepository.findByDateLivraisonBetween(lundi, dimanche, pageable)
+                .map(mapper::toResponse);
+    }
+    @Override
+    public Page getCommandesParStatut(StatutCommande statut, Pageable pageable) {
+        return commandeRepository.findByStatut(statut, pageable)
+                .map(mapper::toResponse);
+    }
+
+    @Override
+    public Page<CommandeResponseDTO> getCommandesParPeriode(LocalDateTime dateDebut, LocalDateTime dateFin, Pageable pageable) {
+        return commandeRepository.findByDateCommandeBetween(dateDebut, dateFin, pageable)
+                .map(mapper::toResponse);
+    }
+
+    @Override
+    public Page<CommandeResponseDTO> getCommandesParMois(int annee, int mois, Pageable pageable) {
+        // YearMonth gère intelligemment la durée des mois (28, 29, 30 ou 31 jours)
+        YearMonth anneeMois = YearMonth.of(annee, mois);
+
+        // Début du mois à 00:00:00
+        LocalDateTime debutMois = anneeMois.atDay(1).atStartOfDay();
+
+        // Fin du mois à 23:59:59.999999999
+        LocalDateTime finMois = anneeMois.atEndOfMonth().atTime(23, 59, 59, 999999999);
+
+        // On réutilise la méthode "Between" du repository !
+        return commandeRepository.findByDateCommandeBetween(debutMois, finMois, pageable)
                 .map(mapper::toResponse);
     }
 }

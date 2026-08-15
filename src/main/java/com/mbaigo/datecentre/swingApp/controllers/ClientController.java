@@ -24,7 +24,7 @@ public class ClientController {
 
         private final ClientService clientService;
 
-        // US : Récupérer un client par son ID
+    // US : Récupérer un client par son ID
         @GetMapping("/{id}")
         @PreAuthorize("hasAnyRole('MANAGER', 'TAILOR')")
         public ResponseEntity<ClientResponseDTO> getClientById(@PathVariable Long id) {

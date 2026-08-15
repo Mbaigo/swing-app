@@ -14,11 +14,12 @@ import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @RestController
 @RequestMapping("/api/v1/commandes")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*") // À adapter selon le port de ton frontend Vue.js (ex: "http://localhost:5173")
+@CrossOrigin(origins = "http://localhost:5173") // À adapter selon le port de ton frontend Vue.js (ex: "http://localhost:5173")
 public class CommandeController {
 
     private final CommandeService commandeService;
@@ -87,4 +88,32 @@ public class CommandeController {
     public ResponseEntity<Page<CommandeResponseDTO>> getCommandesALivrerCetteSemaine(Pageable pageable) {
         return ResponseEntity.ok(commandeService.getCommandesALivrerCetteSemaine(pageable));
     }
+
+    // ==========================================
+    // 🆕 NOUVEAUX ENDPOINTS (DASHBOARD ET FILTRES)
+    // ==========================================
+
+    @GetMapping("/statut/{statut}")
+    public ResponseEntity<Page<CommandeResponseDTO>> getCommandesParStatut(
+            @PathVariable StatutCommande statut,
+            Pageable pageable) {
+        return ResponseEntity.ok(commandeService.getCommandesParStatut(statut, pageable));
+    }
+
+    @GetMapping("/mois")
+    public ResponseEntity<Page<CommandeResponseDTO>> getCommandesParMois(
+            @RequestParam int annee,
+            @RequestParam int mois,
+            Pageable pageable) {
+        return ResponseEntity.ok(commandeService.getCommandesParMois(annee, mois, pageable));
+    }
+
+    @GetMapping("/periode")
+    public ResponseEntity<Page<CommandeResponseDTO>> getCommandesParPeriode(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime dateDebut,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime dateFin,
+            Pageable pageable) {
+        return ResponseEntity.ok(commandeService.getCommandesParPeriode(dateDebut, dateFin, pageable));
+    }
+
 }

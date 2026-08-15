@@ -33,7 +33,8 @@ public class SecurityConfig {
                         // Autoriser l'accès public à la documentation Swagger/OpenAPI
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         // Toutes les autres requêtes nécessitent d'être authentifié
-                        .anyRequest().authenticated()
+                        .anyRequest().permitAll()
+                        //.anyRequest().authenticated()
                 )
                 // Configuration en tant que Resource Server recevant des JWT
                 .oauth2ResourceServer(oauth2 -> oauth2

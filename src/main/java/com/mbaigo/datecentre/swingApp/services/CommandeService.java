@@ -7,6 +7,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 public interface CommandeService {
     // --- CRUD DE BASE ---
@@ -36,4 +37,16 @@ public interface CommandeService {
 
     // Liste des commandes dont la date de livraison tombe dans la semaine en cours (Lundi -> Dimanche)
     Page<CommandeResponseDTO> getCommandesALivrerCetteSemaine(Pageable pageable);
+
+    // --- RECHERCHE PAR STATUT ---
+    // Pour afficher la liste des commandes "EN_COURS" ou "EN_ATTENTE"
+    Page<CommandeResponseDTO> getCommandesParStatut(StatutCommande statut, Pageable pageable);
+
+    // --- RECHERCHE PAR MOIS ET PÉRIODE ---
+    // 1. Pour la courbe : commandes d'un mois précis (ex: annee=2026, mois=8 pour Août)
+    Page<CommandeResponseDTO> getCommandesParMois(int annee, int mois, Pageable pageable);
+
+    // 2. Pour la courbe comparative : commandes entre deux dates
+    // (ex: du 1er Juin au 31 Juillet pour afficher les "Derniers 60 jours")
+    Page<CommandeResponseDTO> getCommandesParPeriode(LocalDateTime dateDebut, LocalDateTime dateFin, Pageable pageable);
 }

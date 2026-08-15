@@ -31,3 +31,6 @@ export default defineConfig({
     })
   ]
 })
+
+getCommandesParStatut : Utile si tu veux rendre ta carte "Commandes en cours : 12" cliquable, pour ouvrir une page qui liste uniquement
+les commandes ayant le statut EN_COURS.
