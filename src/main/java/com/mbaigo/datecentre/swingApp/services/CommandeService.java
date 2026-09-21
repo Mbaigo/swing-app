@@ -18,6 +18,8 @@ public interface CommandeService {
     // On met à jour généralement juste le statut ou la date de livraison pour une commande
     CommandeResponseDTO mettreAJourStatut(Long id, StatutCommande nouveauStatut);
 
+    CommandeResponseDTO updateCommande(Long id, CommandeRequestDTO requestDTO);
+
     void supprimerCommande(Long id);
 
     Page<CommandeResponseDTO> getAllCommandes(Pageable pageable);
@@ -49,4 +51,5 @@ public interface CommandeService {
     // 2. Pour la courbe comparative : commandes entre deux dates
     // (ex: du 1er Juin au 31 Juillet pour afficher les "Derniers 60 jours")
     Page<CommandeResponseDTO> getCommandesParPeriode(LocalDateTime dateDebut, LocalDateTime dateFin, Pageable pageable);
+
 }

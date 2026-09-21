@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.*;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -83,6 +84,39 @@ public class CommandeServiceImpl implements CommandeService {
         commande.setStatut(nouveauStatut);
         // Hibernate détecte le changement et fera l'UPDATE automatiquement
         return mapper.toResponse(commande);
+    }
+
+    @Override
+    public CommandeResponseDTO updateCommande(Long id, CommandeRequestDTO requestDTO) {
+
+        // 1. Récupérer la commande existante depuis la base de données
+        Commande commandeExistante = commandeRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Commande introuvable avec l'ID : " + id));
+
+        // 2. Récupérer le client associé (au cas où il a été modifié dans le menu déroulant)
+        Client client = clientRepository.findById(requestDTO.clientId())
+                .orElseThrow(() -> new EntityNotFoundException("Client introuvable avec l'ID : " + requestDTO.clientId()));
+
+        // 3. Mettre à jour les informations de l'entité
+        // Si tu as créé une méthode @MappingTarget dans ton mapper (ex: void updateEntity(CommandeRequestDTO dto, @MappingTarget Commande entity)) :
+        // commandeMapper.updateEntityFromDto(requestDTO, commandeExistante);
+
+        // SINON, mise à jour manuelle (souvent plus sûre pour gérer les relations et ignorer la modification de l'ID ou de la dateCreation) :
+        commandeExistante.setDateLivraison(requestDTO.dateLivraison());
+
+        // Si tu as ajouté le Statut dans CommandeRequestDTO suite à notre Vue.js
+//        if (requestDTO.statut() != null) {
+//            commandeExistante.setStatut(requestDTO.statut());
+//        }
+
+        // Affecter le client (potentiellement nouveau)
+        commandeExistante.setClient(client);
+
+        // 4. Sauvegarder la commande mise à jour
+        Commande commandeMiseAJour = commandeRepository.save(commandeExistante);
+
+        // 5. Convertir l'entité sauvegardée en DTO de réponse avec ton mapper
+        return mapper.toResponse(commandeMiseAJour); // (Adapte le nom de la méthode selon ton mapper)
     }
 
     @Transactional

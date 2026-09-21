@@ -39,6 +39,13 @@ public class CommandeController {
         return ResponseEntity.ok(commandeService.getCommandeById(id));
     }
 
+    @PutMapping("/{id}")
+    public ResponseEntity<CommandeResponseDTO> updateCommande(
+            @PathVariable Long id,
+            @Valid @RequestBody CommandeRequestDTO request) {
+        return ResponseEntity.ok(commandeService.updateCommande(id, request));
+    }
+
     @GetMapping
     public ResponseEntity<Page<CommandeResponseDTO>> getAllCommandes(Pageable pageable) {
         return ResponseEntity.ok(commandeService.getAllCommandes(pageable));

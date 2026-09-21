@@ -26,7 +26,7 @@ public class ClientController {
 
     // US : Récupérer un client par son ID
         @GetMapping("/{id}")
-        @PreAuthorize("hasAnyRole('MANAGER', 'TAILOR')")
+        //@PreAuthorize("hasAnyRole('MANAGER', 'TAILOR')")
         public ResponseEntity<ClientResponseDTO> getClientById(@PathVariable Long id) {
             Optional<ClientResponseDTO> clientOpt = clientService.getClientById(id);
 
@@ -38,7 +38,7 @@ public class ClientController {
 
         // Récupérer tous les clients
         @GetMapping
-        @PreAuthorize("hasAnyRole('MANAGER', 'TAILOR')")
+        //@PreAuthorize("hasAnyRole('MANAGER', 'TAILOR')")
         public ResponseEntity<Page<ClientResponseDTO>> getAllClients(
                 @RequestParam(defaultValue = "0") int page,
                 @RequestParam(defaultValue = "10") int size) {
@@ -47,14 +47,14 @@ public class ClientController {
 
         // US 1.2 : Recherche rapide par téléphone (ex: /api/v1/clients/search?telephone=+2376000000)
         @GetMapping("/search")
-        @PreAuthorize("hasAnyRole('MANAGER', 'TAILOR')")
+        //@PreAuthorize("hasAnyRole('MANAGER', 'TAILOR')")
         public ResponseEntity<Optional<ClientResponseDTO>> searchByTelephone(@RequestParam String telephone) {
             return ResponseEntity.ok(clientService.getClientByTelephone(telephone));
         }
 
         // US 1.1 : Création
         @PostMapping
-        @PreAuthorize("hasAnyRole('MANAGER','TAILOR')")
+        //@PreAuthorize("hasAnyRole('MANAGER','TAILOR')")
         public ResponseEntity<ClientResponseDTO> createClient(@Valid @RequestBody ClientRequestDTO requestDTO) {
             ClientResponseDTO createdClient = clientService.createClient(requestDTO);
             URI location = ServletUriComponentsBuilder.fromCurrentRequest()
@@ -66,7 +66,7 @@ public class ClientController {
 
         // US 1.3 : Mise à jour
         @PutMapping("/{id}")
-        @PreAuthorize("hasAnyRole('MANAGER')")
+       // @PreAuthorize("hasAnyRole('MANAGER')")
         public ResponseEntity<ClientResponseDTO> updateClient(
                 @PathVariable Long id,
                 @Valid @RequestBody ClientRequestDTO requestDTO) {
