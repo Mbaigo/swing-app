@@ -88,37 +88,45 @@ public class CommandeServiceImpl implements CommandeService {
 
     @Override
     public CommandeResponseDTO updateCommande(Long id, CommandeRequestDTO requestDTO) {
-
-        // 1. Récupérer la commande existante depuis la base de données
         Commande commandeExistante = commandeRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Commande introuvable avec l'ID : " + id));
 
-        // 2. Récupérer le client associé (au cas où il a été modifié dans le menu déroulant)
         Client client = clientRepository.findById(requestDTO.clientId())
                 .orElseThrow(() -> new EntityNotFoundException("Client introuvable avec l'ID : " + requestDTO.clientId()));
 
-        // 3. Mettre à jour les informations de l'entité
-        // Si tu as créé une méthode @MappingTarget dans ton mapper (ex: void updateEntity(CommandeRequestDTO dto, @MappingTarget Commande entity)) :
-        // commandeMapper.updateEntityFromDto(requestDTO, commandeExistante);
-
-        // SINON, mise à jour manuelle (souvent plus sûre pour gérer les relations et ignorer la modification de l'ID ou de la dateCreation) :
         commandeExistante.setDateLivraison(requestDTO.dateLivraison());
-
-        // Si tu as ajouté le Statut dans CommandeRequestDTO suite à notre Vue.js
-//        if (requestDTO.statut() != null) {
-//            commandeExistante.setStatut(requestDTO.statut());
-//        }
-
-        // Affecter le client (potentiellement nouveau)
         commandeExistante.setClient(client);
 
-        // 4. Sauvegarder la commande mise à jour
+        // --- NOUVEAU : MISE À JOUR DES LIGNES ---
+        // 1. On vide la liste actuelle (Hibernate supprimera les anciennes lignes grâce à orphanRemoval=true)
+        commandeExistante.getLignes().clear();
+
+        // 2. On recrée les lignes basées sur la requête Vue.js
+        for (LigneCommandeRequestDTO ligneDTO : requestDTO.lignes()) {
+            LigneCommande ligne = LigneCommande.builder()
+                    .nomMaquette(ligneDTO.nomMaquette())
+                    .quantite(ligneDTO.quantite())
+                    .prixConfection(ligneDTO.prixConfection())
+                    .build();
+
+            // Gestion des images
+            if (ligneDTO.imagesUrl() != null) {
+                for (String url : ligneDTO.imagesUrl()) {
+                    ligne.addImage(ImageMaquette.builder().url(url).build());
+                }
+            }
+
+            ligne.calculerSousTotal();
+            commandeExistante.addLigne(ligne); // addLigne doit faire : this.lignes.add(ligne); ligne.setCommande(this);
+        }
+
+        // 3. On recalcule le total avec les nouvelles lignes
+        commandeExistante.calculerCoutTotal();
+        // -----------------------------------------
+
         Commande commandeMiseAJour = commandeRepository.save(commandeExistante);
-
-        // 5. Convertir l'entité sauvegardée en DTO de réponse avec ton mapper
-        return mapper.toResponse(commandeMiseAJour); // (Adapte le nom de la méthode selon ton mapper)
+        return mapper.toResponse(commandeMiseAJour);
     }
-
     @Transactional
     @Override
     public void supprimerCommande(Long id) {
