@@ -43,7 +43,4 @@ public interface CommandeRepository extends JpaRepository <Commande, Long> {
 // On utilise Object[] car Hibernate renvoie un tableau contenant [Statut, Compte]
     @Query("SELECT c.statut, COUNT(c) FROM Commande c WHERE c.dateCommande BETWEEN :debut AND :fin GROUP BY c.statut")
     List<Object[]> countCommandesByStatutGrouped(@Param("debut") LocalDateTime debut, @Param("fin") LocalDateTime fin);
-
-    // 2. Recherche par période (Sera utilisée pour les mois ET les périodes personnalisées)
-    ///Page<Commande> findByDateCommandeBetween(LocalDateTime start, LocalDateTime end, Pageable pageable);
 }

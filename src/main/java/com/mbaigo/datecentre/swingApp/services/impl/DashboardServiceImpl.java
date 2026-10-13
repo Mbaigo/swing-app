@@ -28,15 +28,25 @@ public class DashboardServiceImpl implements DashboardService {
 
     @Transactional(readOnly = true)
     @Override
-    public DashboardResponseDTO getDashboardData() {
-        LocalDateTime now = LocalDateTime.now();
+    public DashboardResponseDTO getDashboardData(LocalDate dateDebut, LocalDate dateFin) {
         LocalDate today = LocalDate.now();
 
-        // 1. Livraisons du jour
-        long livraisonsDuJour = commandeRepository.findByDateLivraison(today, Pageable.unpaged()).getTotalElements();
+        // Si aucune date n'est fournie, on prend la semaine en cours par défaut
+        if (dateDebut == null || dateFin == null) {
+            dateDebut = today.with(DayOfWeek.MONDAY);
+            dateFin = today.with(DayOfWeek.SUNDAY);
+        }
 
-        // 2. Commandes en cours (En confection + Essayage)
+        LocalDateTime startOfDay = dateDebut.atStartOfDay();
+        LocalDateTime endOfDay = dateFin.atTime(LocalTime.MAX);
+
+        // 1. Snapshot actuel (Indépendant de la période)
+        long livraisonsDuJour = commandeRepository.findByDateLivraison(today, Pageable.unpaged()).getTotalElements();
         long commandesEnCours = commandeRepository.countByStatutIn(List.of(StatutCommande.EN_CONFECTION, StatutCommande.ESSAYAGE));
+
+        // 2. Statistiques temporelles (Dépendantes de la période)
+        BigDecimal chiffrePeriode = commandeRepository.sumChiffreAffairesBetween(startOfDay, endOfDay);
+        List<Object[]> repartitionRaw = commandeRepository.countCommandesByStatutGrouped(startOfDay, endOfDay);
 
         // 3. Chiffre d'affaires de la semaine
         LocalDate lundi = today.with(DayOfWeek.MONDAY);
@@ -44,7 +54,6 @@ public class DashboardServiceImpl implements DashboardService {
         BigDecimal chiffreSemaine = commandeRepository.sumChiffreAffairesBetween(lundi.atStartOfDay(), dimanche.atTime(LocalTime.MAX));
 
         // 4. Répartition des statuts de la SEMAINE (Pour le Doughnut chart)
-        List<Object[]> repartitionRaw = commandeRepository.countCommandesByStatutGrouped(lundi.atStartOfDay(), dimanche.atTime(LocalTime.MAX));
         Map<String, Long> repartition = new HashMap<>();
 
         // Initialisation à zéro pour garantir que les 4 couleurs du Doughnut ont une valeur
