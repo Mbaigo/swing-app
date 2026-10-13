@@ -23,6 +23,12 @@ spring:
     properties:
       hibernate:
         format_sql: true
+    # --- OPTIMISATION : BATCHING SQL ---
+        jdbc:
+            batch_size: 20
+        order_inserts: true
+        order_updates: true
+# -----------------------------------
 
   # Java 21 Performance (Virtual Threads)
   threads:

@@ -2,6 +2,8 @@ package com.mbaigo.datecentre.swingApp.models;
 import com.mbaigo.datecentre.swingApp.enums.StatutCommande;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.BatchSize;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -43,6 +45,7 @@ public class Commande {
     private Client client;
     @OneToMany(mappedBy = "commande", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
+    @BatchSize(size = 5)
     private List<LigneCommande> lignes = new ArrayList<>();
 
     public void calculerCoutTotal() {

@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.Builder;
+import org.hibernate.annotations.BatchSize;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -33,6 +34,7 @@ public class LigneCommande {
     // ✅ CORRECT (Utiliser l'entité ImageMaquette)
     @OneToMany(mappedBy = "ligneCommande", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
+    @BatchSize(size = 5)
     private List<ImageMaquette> images = new ArrayList<>();
 
     public void addImage(ImageMaquette image) {
