@@ -120,6 +120,11 @@ public class CommandeServiceImpl implements CommandeService {
             commandeExistante.addLigne(ligne); // addLigne doit faire : this.lignes.add(ligne); ligne.setCommande(this);
         }
 
+        // Met à jour le statut uniquement si le frontend en a envoyé un
+        if (requestDTO.statut() != null) {
+            commandeExistante.setStatut(requestDTO.statut());
+        }
+
         // 3. On recalcule le total avec les nouvelles lignes
         commandeExistante.calculerCoutTotal();
         // -----------------------------------------
