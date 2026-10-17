@@ -80,7 +80,11 @@ public class CommandeServiceImpl implements CommandeService {
         Commande commande = commandeRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Commande introuvable"));
 
-        commande.setStatut(nouveauStatut);
+        // Mise à jour du statut avec validation
+        if (commande.getStatut() != null) {
+            validerTransitionStatut(commande.getStatut(), nouveauStatut);
+            commande.setStatut(nouveauStatut);
+        }
         // Hibernate détecte le changement et fera l'UPDATE automatiquement
         return mapper.toResponse(commande);
     }
@@ -120,7 +124,9 @@ public class CommandeServiceImpl implements CommandeService {
         }
 
         // Met à jour le statut uniquement si le frontend en a envoyé un
+        // Mise à jour du statut avec validation
         if (requestDTO.statut() != null) {
+            validerTransitionStatut(commandeExistante.getStatut(), requestDTO.statut());
             commandeExistante.setStatut(requestDTO.statut());
         }
 
@@ -232,5 +238,36 @@ public class CommandeServiceImpl implements CommandeService {
         // On réutilise la méthode "Between" du repository !
         return commandeRepository.findByDateCommandeBetween(debutMois, finMois, pageable)
                 .map(mapper::toResponse);
+    }
+
+    // Méthode de validation stricte de la machine à états
+    private void validerTransitionStatut(StatutCommande ancienStatut, StatutCommande nouveauStatut) {
+        if (ancienStatut == nouveauStatut) {
+            return;
+        }
+
+        // NOUVELLE RÈGLE : L'annulation n'est possible QUE si la commande est encore au statut CREEE
+        if (nouveauStatut == StatutCommande.ANNULEE) {
+            if (ancienStatut != StatutCommande.CREEE) {
+                throw new IllegalArgumentException(
+                        "Annulation impossible : La commande est déjà en " + ancienStatut + " (seules les commandes CREEE peuvent être annulées)."
+                );
+            }
+            return;
+        }
+
+        // Vérification de la progression stricte (reste identique)
+        boolean isTransitionValide = switch (ancienStatut) {
+            case CREEE -> nouveauStatut == StatutCommande.EN_CONFECTION;
+            case EN_CONFECTION -> nouveauStatut == StatutCommande.ESSAYAGE;
+            case ESSAYAGE -> nouveauStatut == StatutCommande.TERMINEE;
+            case TERMINEE, ANNULEE -> false;
+        };
+
+        if (!isTransitionValide) {
+            throw new IllegalArgumentException(
+                    "Transition invalide : Impossible de passer de " + ancienStatut + " à " + nouveauStatut
+            );
+        }
     }
 }
